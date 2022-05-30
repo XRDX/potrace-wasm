@@ -102,6 +102,41 @@ async function loadFromImageData(imagedata, width, height, config) {
 }
 
 /**
+ * @param imagedata to be converted for svg.
+ * @param width for the imageData.
+ * @param height for the imageData.
+ * @param config for customizing.
+ * @returns promise that emits a svg string or path data array.
+ */
+async function loadFromData(data, width, height, config) {
+  let start = cwrap("start", "string", [
+    "uint8array", // pixels
+    "number", // width
+    "number", // height
+    "number", // transform
+    "number", // pathonly
+    "number", // turdsize
+    "number", // alphamax
+    "number", // opticurve
+    "number", // opttolerance
+  ]);
+
+  let c = buildConfig(config);
+
+  await ready();
+  let result = start(data, width, height, c.transform, c.pathonly, c.turdsize, c.alphamax, c.opticurve ? 1 : 0, c.opttolerance);
+
+  if (c.pathonly) {
+    return result
+      .split("M")
+      .filter((path) => path)
+      .map((path) => "M" + path);
+  }
+  return result;
+}
+
+
+/**
  * @returns wrapped function for start.
  */
 function wrapStart() {
@@ -120,5 +155,5 @@ function wrapStart() {
 
 // export the functions in server env.
 if (typeof module !== "undefined") {
-  module.exports = { loadFromCanvas, loadFromImageData };
+  module.exports = { loadFromCanvas, loadFromImageData, loadFromData };
 }
